@@ -1,0 +1,135 @@
+# Frontend Integration Guide for iOS Developer
+
+## 1. Overview
+This backend powers a 3D styling application. The user flow involves registration, profile creation, uploading photos to generate a 3D body model, and receiving AI-driven styling recommendations based on occasions.
+
+**Base URL**: `http://<YOUR_BACKEND_IP>:8080` (Replace with your actual server URL)
+
+## 2. Authentication Mechanism
+The backend currently uses **HTTP Basic Authentication**.
+- **Registration**: Open endpoint.
+- **Protected Routes**: All other routes require an `Authorization` header.
+
+**Header Format**:
+```swift
+Authorization: Basic <Base64Encoded("email:password")>
+```
+*Note: Ensure you encode the credentials (email:password) to Base64 in your iOS networking layer.*
+
+---
+
+## 3. App Flow & API Mapping
+
+### Step 1: Registration
+User creates an account.
+
+- **Screen**: Sign Up
+- **Endpoint**: `POST /public/register`
+- **Body** (JSON):
+  ```json
+  {
+    "email": "user@example.com",
+    "password": "securepassword123"
+  }
+  ```
+- **Response**: Returns the created `UserEntity`.
+- **Action**: Store the email/password securely (e.g., Keychain) to use for Basic Auth headers in subsequent requests. Navigate to Profile/Home.
+
+### Step 2: Profile Setup (Optional initially, or part of onboarding)
+User fills in their details.
+
+- **Screen**: Profile Edit
+- **Endpoint**: `PUT /user/profile`
+- **Headers**: Basic Auth
+- **Body** (JSON):
+  ```json
+  {
+    "age": 25,
+    "gender": "Female",
+    "skincolor": "Fair",
+    "Height": 175.5 // Note: 'Height' is capitalized in DTO
+  }
+  ```
+
+### Step 3: Generate 3D Model
+This is the core feature. User uploads front and side photos and their height.
+
+- **Screen**: 3D Generation / Camera Capture
+- **Endpoint**: `POST /files/upload`
+- **Headers**: Basic Auth, `Content-Type: multipart/form-data`
+- **Parameters**:
+  - `file1`: Front Image (File)
+  - `file2`: Side Image (File)
+  - `height`: Double (e.g., 175.5)
+- **Response** (`Three_D_ModelResponse`):
+  ```json
+  {
+    "model_url": "https://cloudinary.com/.../model.obj", // URL to the 3D model file (.obj format)
+    "measurements": { ... } // JSON object with calculated measurements
+  }
+  ```
+- **Action**:
+  1. Show a loading spinner (this process may take time).
+  2. Parse the `model_url`.
+  3. Store this URL locally or user state to display on the Home screen.
+
+### Step 4: Home / Dashboard (Display 3D Model)
+Display the user's generated 3D model.
+
+- **Screen**: Home
+- **Data Source**: Use the `model_url` received from Step 3.
+- **Backend Check**: You can also check `GET /user/model-url` if the backend persists it (check with backend dev if this persists across sessions).
+- **iOS Implementation**:
+  - The model is provided in **.obj** format.
+  - Use **SceneKit** (`SCNScene`) to render `.obj` files directly.
+  - For **RealityKit**, you may need to convert `.obj` to `.usdz` or use `ModelIO` to load the entity.
+  - Alternatively, use a `WKWebView` with a standardized 3D viewer (like `google/model-viewer`) if native rendering is complex.
+
+### Step 5: Styling Recommendations
+User asks for styling tips for a specific occasion.
+
+- **Screen**: Stylist / Chat
+- **Endpoint**: `GET /user/recommendations`
+- **Headers**: Basic Auth
+- **Query Param**: `?occasion=Wedding` (or "Casual", "Date Night", etc.)
+- **Response**: String (Text description of the recommendation).
+- **Action**: Display the text to the user.
+
+---
+
+## 4. Other Useful Endpoints
+
+- **Get Profile**: `GET /user/profile`
+- **Get Measurements**: `GET /user/measurements`
+- **Get Body Shape**: `GET /user/body-shape`
+
+## 5. iOS Developer Tips
+
+### Networking
+Use **Alamofire** for easy multipart form uploads and Basic Auth handling.
+
+```swift
+// Example Upload with Alamofire
+AF.upload(multipartFormData: { multipartFormData in
+    multipartFormData.append(frontImageData, withName: "file1", fileName: "front.jpg", mimeType: "image/jpeg")
+    multipartFormData.append(sideImageData, withName: "file2", fileName: "side.jpg", mimeType: "image/jpeg")
+    multipartFormData.append("175.0".data(using: .utf8)!, withName: "height")
+}, to: "http://api.com/files/upload", headers: [.authorization(username: email, password: password)])
+.responseJSON { response in
+    debugPrint(response)
+}
+```
+
+### 3D Model Rendering
+If the model is in `.glb` or `.gltf` format:
+- **RealityKit/SceneKit**: Native and performant. reliable for AR.
+- **Model3D (SwiftUI)**: New in iOS 17+, very easy to use.
+  ```swift
+  Model3D(url: URL(string: modelUrl)!) { model in
+      model
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+  } placeholder: {
+      ProgressView()
+  }
+  ```

@@ -1,0 +1,140 @@
+POSTMAN BACKEND TESTS & ENDPOINTS
+================================
+
+To use these tests in Postman, you can either:
+1. Copy the cURL commands and import them into Postman (Import -> Raw Text).
+2. Manually create requests using the details below.
+
+Base URL: http://localhost:8080 (assuming default Spring Boot port)
+
+---
+
+1. REGISTER USER
+----------------
+Method: POST
+URL: {{base_url}}/user/register
+Headers: Content-Type: application/json
+Body (JSON):
+{
+  "email": "testuser@example.com",
+  "password": "password123"
+}
+
+cURL:
+curl -X POST http://localhost:8080/user/register \
+-H "Content-Type: application/json" \
+-d '{"email": "testuser@example.com", "password": "password123"}'
+
+
+2. CREATE USER (Alternative)
+----------------------------
+Method: POST
+URL: {{base_url}}/user/create
+Headers: Content-Type: application/json
+Body (JSON):
+{
+  "email": "testuser2@example.com",
+  "password": "password123"
+}
+
+cURL:
+curl -X POST http://localhost:8080/user/create \
+-H "Content-Type: application/json" \
+-d '{"email": "testuser2@example.com", "password": "password123"}'
+
+
+3. UPDATE PROFILE
+-----------------
+Method: PUT
+URL: {{base_url}}/user/profile/testuser@example.com
+Headers: Content-Type: application/json
+Body (JSON):
+{
+  "age": 25,
+  "gender": "Male",
+  "skincolor": "Fair",
+  "height": 175.5
+}
+(Note: 'height' is mapped from 'Double Height' in DTO, standard Java mapping typically lowercases the first letter)
+
+cURL:
+curl -X PUT http://localhost:8080/user/profile/testuser@example.com \
+-H "Content-Type: application/json" \
+-d '{"age": 25, "gender": "Male", "skincolor": "Fair", "height": 175.5}'
+
+
+4. UPLOAD FILES & GET 3D MODEL (Direct Upload)
+----------------------------------------------
+Method: POST
+URL: {{base_url}}/files/upload
+Body: form-data
+  - file1: (Select File - front image)
+  - file2: (Select File - side image)
+  - height: 175.5
+
+cURL (example):
+curl -X POST http://localhost:8080/files/upload \
+-F "file1=@/path/to/front.jpg" \
+-F "file2=@/path/to/side.jpg" \
+-F "height=175.5"
+
+
+5. MODEL REQUEST (User Associated)
+----------------------------------
+Method: POST
+URL: {{base_url}}/user/model-request/testuser@example.com
+Body: form-data
+  - frontImage: (Select File)
+  - sideImage: (Select File)
+
+cURL (example):
+curl -X POST http://localhost:8080/user/model-request/testuser@example.com \
+-F "frontImage=@/path/to/front.jpg" \
+-F "sideImage=@/path/to/side.jpg"
+
+
+6. GET MODEL URL
+----------------
+Method: GET
+URL: {{base_url}}/user/model-url/testuser@example.com
+
+cURL:
+curl -X GET http://localhost:8080/user/model-url/testuser@example.com
+
+
+7. GET MEASUREMENTS
+-------------------
+Method: GET
+URL: {{base_url}}/user/measurements/testuser@example.com
+
+cURL:
+curl -X GET http://localhost:8080/user/measurements/testuser@example.com
+
+
+8. GET USER PROFILE
+-------------------
+Method: GET
+URL: {{base_url}}/user/profile/testuser@example.com
+
+cURL:
+curl -X GET http://localhost:8080/user/profile/testuser@example.com
+
+
+9. GET BODY SHAPE
+-----------------
+Method: GET
+URL: {{base_url}}/user/body-shape/testuser@example.com
+
+cURL:
+curl -X GET http://localhost:8080/user/body-shape/testuser@example.com
+
+
+10. GET RECOMMENDATIONS
+-----------------------
+Method: GET
+URL: {{base_url}}/user/recommendations/testuser@example.com?occasion=casual
+Params:
+  - occasion: casual (or formal, party, etc.)
+
+cURL:
+curl -X GET "http://localhost:8080/user/recommendations/testuser@example.com?occasion=casual"
